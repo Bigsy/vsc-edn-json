@@ -1,0 +1,31 @@
+{
+  "name": "string-highlighter",
+  "displayName": "String Highlighter",
+  "description": "Highlight strings and convert them to lowercase",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:string-highlighter.highlightAndLowercase"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [{
+      "command": "string-highlighter.highlightAndLowercase",
+      "title": "Highlight and Lowercase Strings"
+    }]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.60.0",
+    "@types/node": "^16.x.x",
+    "eslint": "^8.x.x"
+  }
+}
