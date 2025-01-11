@@ -1,33 +1,22 @@
 const vscode = require('vscode');
 
-function activate(context) {
-    let disposable = vscode.commands.registerCommand('string-highlighter.highlightAndLowercase', function () {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            vscode.window.showInformationMessage('No editor is active');
-            return;
-        }
+function processText(editor, transformFn) {
+    if (!editor) {
+        vscode.window.showInformationMessage('No editor is active');
+        return;
+    }
 
-        const document = editor.document;
-        const text = document.getText();
-        
-        // Regular expression to match strings (both single and double quotes)
-        const stringRegex = /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'/g;
-        
-        let match;
-        let edits = [];
-        
-        while ((match = stringRegex.exec(text)) !== null) {
-            const startPos = document.positionAt(match.index);
-            const endPos = document.positionAt(match.index + match[0].length);
-            const range = new vscode.Range(startPos, endPos);
-            
-            // Convert the string to lowercase, keeping the quotes
-            const quote = match[0][0]; // first character (quote type)
-            const content = match[0].slice(1, -1).toLowerCase();
-            const newText = quote + content + quote;
-            
-            edits.push(new vscode.TextEdit(range, newText));
+    const selections = editor.selections;
+    
+    if (selections.length === 0 || selections.every(sel => sel.isEmpty)) {
+        vscode.window.showInformationMessage('Please select some text first');
+        return;
+    }
+
+    editor.edit(editBuilder => {
+        selections.forEach(selection => {
+            const text = editor.document.getText(selection);
+            const newText = transformFn(text);
             
             // Create decoration type for highlighting
             const decorationType = vscode.window.createTextEditorDecorationType({
@@ -36,28 +25,33 @@ function activate(context) {
             });
             
             // Apply decoration
-            editor.setDecorations(decorationType, [range]);
+            editor.setDecorations(decorationType, [selection]);
             
             // Remove decoration after 2 seconds
             setTimeout(() => {
                 decorationType.dispose();
             }, 2000);
-        }
-        
-        // Apply all edits
-        if (edits.length > 0) {
-            editor.edit(editBuilder => {
-                edits.forEach(edit => {
-                    editBuilder.replace(edit.range, edit.newText);
-                });
-            });
-            vscode.window.showInformationMessage(`Converted ${edits.length} strings to lowercase`);
-        } else {
-            vscode.window.showInformationMessage('No strings found in the current document');
-        }
+
+            editBuilder.replace(selection, newText);
+        });
     });
 
-    context.subscriptions.push(disposable);
+    const selectionCount = selections.length;
+    vscode.window.showInformationMessage(
+        `Converted ${selectionCount} ${selectionCount === 1 ? 'selection' : 'selections'}`
+    );
+}
+
+function activate(context) {
+    let lowercaseDisposable = vscode.commands.registerCommand('string-highlighter.convertToLowercase', function () {
+        processText(vscode.window.activeTextEditor, str => str.toLowerCase());
+    });
+
+    let uppercaseDisposable = vscode.commands.registerCommand('string-highlighter.convertToUppercase', function () {
+        processText(vscode.window.activeTextEditor, str => str.toUpperCase());
+    });
+
+    context.subscriptions.push(lowercaseDisposable, uppercaseDisposable);
 }
 
 function deactivate() {}

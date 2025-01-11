@@ -1,31 +1,80 @@
 {
-  "name": "string-highlighter",
-  "displayName": "String Highlighter",
-  "description": "Highlight strings and convert them to lowercase",
+  "name": "text-case-converter",
+  "displayName": "Text Case Converter",
+  "description": "Quickly convert selected text to uppercase or lowercase with visual highlighting",
   "version": "0.0.1",
+  "publisher": "YOUR-PUBLISHER-NAME",
   "engines": {
     "vscode": "^1.60.0"
   },
   "categories": [
-    "Other"
+    "Other",
+    "Formatters"
   ],
+  "keywords": [
+    "case",
+    "convert",
+    "uppercase",
+    "lowercase",
+    "text"
+  ],
+  "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "YOUR-REPO-URL"
+  },
   "activationEvents": [
-    "onCommand:string-highlighter.highlightAndLowercase"
+    "onCommand:string-highlighter.convertToLowercase",
+    "onCommand:string-highlighter.convertToUppercase"
   ],
   "main": "./extension.js",
   "contributes": {
-    "commands": [{
-      "command": "string-highlighter.highlightAndLowercase",
-      "title": "Highlight and Lowercase Strings"
-    }]
+    "commands": [
+      {
+        "command": "string-highlighter.convertToLowercase",
+        "title": "Convert to Lowercase"
+      },
+      {
+        "command": "string-highlighter.convertToUppercase",
+        "title": "Convert to Uppercase"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "submenu": "string-highlighter.submenu",
+          "group": "1_modification",
+          "when": "editorHasSelection"
+        }
+      ],
+      "string-highlighter.submenu": [
+        {
+          "command": "string-highlighter.convertToLowercase",
+          "group": "1_case"
+        },
+        {
+          "command": "string-highlighter.convertToUppercase",
+          "group": "1_case"
+        }
+      ]
+    },
+    "submenus": [
+      {
+        "id": "string-highlighter.submenu",
+        "label": "Convert Case"
+      }
+    ]
   },
   "scripts": {
     "lint": "eslint .",
-    "pretest": "npm run lint"
+    "pretest": "npm run lint",
+    "package": "vsce package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
     "@types/vscode": "^1.60.0",
     "@types/node": "^16.x.x",
-    "eslint": "^8.x.x"
+    "eslint": "^8.x.x",
+    "@vscode/vsce": "^2.24.0"
   }
 }
