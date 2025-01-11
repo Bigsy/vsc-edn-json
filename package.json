@@ -25,7 +25,8 @@
   },
   "activationEvents": [
     "onCommand:string-highlighter.convertToLowercase",
-    "onCommand:string-highlighter.convertToUppercase"
+    "onCommand:string-highlighter.convertToUppercase",
+    "onCommand:string-highlighter.convertJsonToEdn"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -37,6 +38,10 @@
       {
         "command": "string-highlighter.convertToUppercase",
         "title": "Convert to Uppercase"
+      },
+      {
+        "command": "string-highlighter.convertJsonToEdn",
+        "title": "Convert JSON to EDN"
       }
     ],
     "menus": {
@@ -55,13 +60,17 @@
         {
           "command": "string-highlighter.convertToUppercase",
           "group": "1_case"
+        },
+        {
+          "command": "string-highlighter.convertJsonToEdn",
+          "group": "2_conversion"
         }
       ]
     },
     "submenus": [
       {
         "id": "string-highlighter.submenu",
-        "label": "Convert Case"
+        "label": "Convert Text"
       }
     ]
   },
@@ -72,9 +81,12 @@
     "publish": "vsce publish"
   },
   "devDependencies": {
-    "@types/vscode": "^1.60.0",
     "@types/node": "^16.x.x",
-    "eslint": "^8.x.x",
-    "@vscode/vsce": "^2.24.0"
+    "@types/vscode": "^1.60.0",
+    "@vscode/vsce": "^2.24.0",
+    "eslint": "^8.x.x"
+  },
+  "dependencies": {
+    "jsedn": "^0.4.1"
   }
 }

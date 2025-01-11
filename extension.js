@@ -1,4 +1,5 @@
 const vscode = require('vscode');
+const { encode } = require('jsedn');
 
 function processText(editor, transformFn) {
     if (!editor) {
@@ -51,7 +52,19 @@ function activate(context) {
         processText(vscode.window.activeTextEditor, str => str.toUpperCase());
     });
 
-    context.subscriptions.push(lowercaseDisposable, uppercaseDisposable);
+    let jsonToEdnDisposable = vscode.commands.registerCommand('string-highlighter.convertJsonToEdn', function () {
+        processText(vscode.window.activeTextEditor, str => {
+            try {
+                const jsonObj = JSON.parse(str);
+                return encode(jsonObj);
+            } catch (error) {
+                vscode.window.showErrorMessage('Invalid JSON: ' + error.message);
+                return str;
+            }
+        });
+    });
+
+    context.subscriptions.push(lowercaseDisposable, uppercaseDisposable, jsonToEdnDisposable);
 }
 
 function deactivate() {}
