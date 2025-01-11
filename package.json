@@ -1,7 +1,7 @@
 {
-  "name": "text-case-converter",
-  "displayName": "Text Case Converter",
-  "description": "Quickly convert selected text to uppercase or lowercase with visual highlighting",
+  "name": "edn-json-converter",
+  "displayName": "EDN-JSON Converter",
+  "description": "Convert between EDN and JSON formats with visual highlighting",
   "version": "0.0.1",
   "publisher": "YOUR-PUBLISHER-NAME",
   "engines": {
@@ -12,11 +12,11 @@
     "Formatters"
   ],
   "keywords": [
-    "case",
+    "edn",
+    "json",
     "convert",
-    "uppercase",
-    "lowercase",
-    "text"
+    "formatter",
+    "data"
   ],
   "icon": "images/icon.png",
   "repository": {
@@ -24,24 +24,19 @@
     "url": "YOUR-REPO-URL"
   },
   "activationEvents": [
-    "onCommand:string-highlighter.convertToLowercase",
-    "onCommand:string-highlighter.convertToUppercase",
-    "onCommand:string-highlighter.convertJsonToEdn"
+    "onCommand:string-highlighter.convertJsonToEdn",
+    "onCommand:string-highlighter.convertEdnToJson"
   ],
   "main": "./extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "string-highlighter.convertToLowercase",
-        "title": "Convert to Lowercase"
-      },
-      {
-        "command": "string-highlighter.convertToUppercase",
-        "title": "Convert to Uppercase"
-      },
-      {
         "command": "string-highlighter.convertJsonToEdn",
         "title": "Convert JSON to EDN"
+      },
+      {
+        "command": "string-highlighter.convertEdnToJson",
+        "title": "Convert EDN to JSON"
       }
     ],
     "menus": {
@@ -54,15 +49,11 @@
       ],
       "string-highlighter.submenu": [
         {
-          "command": "string-highlighter.convertToLowercase",
-          "group": "1_case"
-        },
-        {
-          "command": "string-highlighter.convertToUppercase",
-          "group": "1_case"
-        },
-        {
           "command": "string-highlighter.convertJsonToEdn",
+          "group": "2_conversion"
+        },
+        {
+          "command": "string-highlighter.convertEdnToJson",
           "group": "2_conversion"
         }
       ]

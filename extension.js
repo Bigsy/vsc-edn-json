@@ -1,5 +1,16 @@
 const vscode = require('vscode');
-const { encode } = require('jsedn');
+const { encode, parse, Keyword, Map } = require('jsedn');
+
+// Create output channel for debugging
+const outputChannel = vscode.window.createOutputChannel('EDN Converter Debug');
+
+function debug(message, obj = null) {
+    if (obj) {
+        outputChannel.appendLine(`${message}: ${JSON.stringify(obj, null, 2)}`);
+    } else {
+        outputChannel.appendLine(message);
+    }
+}
 
 function processText(editor, transformFn) {
     if (!editor) {
@@ -43,28 +54,110 @@ function processText(editor, transformFn) {
     );
 }
 
+function convertEdnToObj(ednObj) {
+    if (typeof ednObj === 'string' || typeof ednObj === 'number' || typeof ednObj === 'boolean') {
+        return ednObj;
+    }
+    
+    // Handle EDN maps
+    if (ednObj && ednObj.keys && ednObj.vals) {
+        const result = {};
+        const keys = ednObj.keys || [];
+        const vals = ednObj.vals || [];
+        for (let i = 0; i < keys.length; i++) {
+            const key = keys[i].name.replace(/^:/, '');  // Remove leading colon from keywords
+            const val = convertEdnToObj(vals[i]);
+            result[key] = val;
+        }
+        return result;
+    }
+    
+    // Handle EDN vectors/lists
+    if (Array.isArray(ednObj)) {
+        return ednObj.map(convertEdnToObj);
+    }
+    
+    return ednObj;
+}
+
+function keywordizeObject(obj) {
+    debug('Processing object:', obj);
+    if (Array.isArray(obj)) {
+        debug('Processing array');
+        return obj.map(keywordizeObject);
+    } else if (obj && typeof obj === 'object') {
+        debug('Processing object keys');
+        const pairs = [];
+        for (const [key, value] of Object.entries(obj)) {
+            debug(`Processing key: ${key}`);
+            pairs.push(new Keyword(`:${key}`));
+            const processedValue = keywordizeObject(value);
+            debug(`Processed value for ${key}:`, processedValue);
+            pairs.push(processedValue);
+        }
+        const ednMap = new Map(pairs);
+        debug('Created EDN map:', ednMap);
+        return ednMap;
+    }
+    debug('Returning primitive value:', obj);
+    return obj;
+}
+
 function activate(context) {
-    let lowercaseDisposable = vscode.commands.registerCommand('string-highlighter.convertToLowercase', function () {
-        processText(vscode.window.activeTextEditor, str => str.toLowerCase());
-    });
-
-    let uppercaseDisposable = vscode.commands.registerCommand('string-highlighter.convertToUppercase', function () {
-        processText(vscode.window.activeTextEditor, str => str.toUpperCase());
-    });
-
     let jsonToEdnDisposable = vscode.commands.registerCommand('string-highlighter.convertJsonToEdn', function () {
         processText(vscode.window.activeTextEditor, str => {
             try {
+                debug('\n--- Starting JSON to EDN conversion ---');
+                debug('Input JSON:', str);
+                
                 const jsonObj = JSON.parse(str);
-                return encode(jsonObj);
+                debug('Parsed JSON:', jsonObj);
+                
+                const keywordized = keywordizeObject(jsonObj);
+                debug('Keywordized object:', keywordized);
+                
+                const result = encode(keywordized);
+                debug('Final result:', result);
+                
+                return result;
             } catch (error) {
-                vscode.window.showErrorMessage('Invalid JSON: ' + error.message);
+                debug('ERROR:', error);
+                debug('Error stack:', error.stack);
+                vscode.window.showErrorMessage('Invalid JSON: ' + (error.message || error));
                 return str;
             }
         });
     });
 
-    context.subscriptions.push(lowercaseDisposable, uppercaseDisposable, jsonToEdnDisposable);
+    let ednToJsonDisposable = vscode.commands.registerCommand('string-highlighter.convertEdnToJson', function () {
+        processText(vscode.window.activeTextEditor, str => {
+            try {
+                debug('\n--- Starting EDN to JSON conversion ---');
+                debug('Input EDN:', str);
+                
+                const ednObj = parse(str);
+                debug('Parsed EDN:', ednObj);
+                
+                const jsObj = convertEdnToObj(ednObj);
+                debug('Converted to JS object:', jsObj);
+                
+                const result = JSON.stringify(jsObj, null, 2);
+                debug('Final JSON:', result);
+                
+                return result;
+            } catch (error) {
+                debug('ERROR:', error);
+                debug('Error stack:', error.stack);
+                vscode.window.showErrorMessage('Invalid EDN: ' + (error.message || error));
+                return str;
+            }
+        });
+    });
+
+    context.subscriptions.push(
+        jsonToEdnDisposable,
+        ednToJsonDisposable
+    );
 }
 
 function deactivate() {}

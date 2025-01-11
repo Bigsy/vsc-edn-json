@@ -1,10 +1,10 @@
-# Text Case Converter
+# EDN-JSON Converter
 
-A Visual Studio Code extension that allows you to quickly convert selected text to uppercase or lowercase with a visual highlight effect.
+A Visual Studio Code extension that allows you to convert between JSON and EDN formats with visual feedback.
 
 ## Features
 
-- Convert selected text to uppercase or lowercase
+- Convert between JSON and EDN formats
 - Works with multiple selections
 - Visual highlight effect shows which text was converted
 - Convenient right-click menu access
@@ -14,45 +14,61 @@ A Visual Studio Code extension that allows you to quickly convert selected text 
 
 1. Select any text in your editor (you can select multiple areas by holding Cmd/Ctrl while selecting)
 2. Right-click on the selected text
-3. Choose "Convert Case" from the context menu
+3. Choose "Convert Text" from the context menu
 4. Select either:
-   - "Convert to Uppercase" to convert to UPPERCASE
-   - "Convert to Lowercase" to convert to lowercase
+   - "Convert JSON to EDN" to convert JSON to Clojure EDN format
+   - "Convert EDN to JSON" to convert Clojure EDN to JSON format
 
 ## Examples
 
-Before:
+JSON/EDN Conversion:
+```json
+// JSON to EDN
+{"name": "John", "age": 30, "hobbies": ["reading", "coding"]}
 ```
-Hello World
+converts to:
+```clojure
+{:name "John" :age 30 :hobbies ["reading" "coding"]}
 ```
 
-After (Uppercase):
+```clojure
+// EDN to JSON
+{:name "John" :age 30 :hobbies ["reading" "coding"]}
 ```
-HELLO WORLD
-```
-
-After (Lowercase):
-```
-hello world
+converts to:
+```json
+{
+  "name": "John",
+  "age": 30,
+  "hobbies": ["reading", "coding"]
+}
 ```
 
 ## Requirements
 
-- Visual Studio Code version 1.60.0 or higher
+- Visual Studio Code 1.60.0 or higher
 
 ## Extension Settings
 
-This extension doesn't require any additional settings.
+This extension contributes the following commands:
+
+* `string-highlighter.convertJsonToEdn`: Convert JSON to EDN format
+* `string-highlighter.convertEdnToJson`: Convert EDN to JSON format
 
 ## Known Issues
 
-None at this time.
+Please report any issues on the GitHub repository.
 
 ## Release Notes
+
+### 0.0.2
+
+Added support for nested objects and arrays:
+- Pretty-printed JSON output
 
 ### 0.0.1
 
 Initial release:
-- Basic case conversion functionality
-- Support for multiple selections
-- Visual highlighting effect
+- JSON to EDN conversion
+- EDN to JSON conversion
+- Visual highlighting feedback
