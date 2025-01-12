@@ -154,9 +154,65 @@ function activate(context) {
         });
     });
 
+    let prettyPrintEdnDisposable = vscode.commands.registerCommand('string-highlighter.prettyPrintEdn', function () {
+        processText(vscode.window.activeTextEditor, str => {
+            try {
+                debug('\n--- Pretty printing EDN ---');
+                debug('Input EDN:', str);
+                
+                const ednObj = parse(str);
+                debug('Parsed EDN:', ednObj);
+
+                // Custom pretty print function
+                function prettyFormat(obj, indent = 0) {
+                    const spaces = ' '.repeat(indent);
+                    
+                    if (obj instanceof Map) {
+                        const pairs = [];
+                        for (let i = 0; i < obj.keys.length; i++) {
+                            const key = encode(obj.keys[i]);
+                            const val = prettyFormat(obj.vals[i], indent + 4);
+                            pairs.push(`${key} ${val}`);
+                        }
+                        if (pairs.length === 0) return '{}';
+                        const formattedPairs = pairs.map((p, i) => {
+                            if (i === 0) return p; // First pair on same line as opening brace
+                            return ' ' + p; // One space indent for subsequent pairs
+                        });
+                        return `{${formattedPairs.join('\n')}}`;
+                    }
+                    
+                    if (Array.isArray(obj)) {
+                        if (obj.length === 0) return '[]';
+                        const items = obj.map(item => prettyFormat(item, indent + 4));
+                        const formattedItems = items.map((item, i) => {
+                            if (i === 0) return item; // First item on same line as opening bracket
+                            return ' ' + item; // One space indent for subsequent items
+                        });
+                        return `[${formattedItems.join('\n')}]`;
+                    }
+                    
+                    const encoded = encode(obj);
+                    return `${encoded}`;
+                }
+                
+                const result = prettyFormat(ednObj);
+                debug('Pretty printed EDN:', result);
+                
+                return result;
+            } catch (error) {
+                debug('ERROR:', error);
+                debug('Error stack:', error.stack);
+                vscode.window.showErrorMessage('Invalid EDN: ' + (error.message || error));
+                return str;
+            }
+        });
+    });
+
     context.subscriptions.push(
         jsonToEdnDisposable,
-        ednToJsonDisposable
+        ednToJsonDisposable,
+        prettyPrintEdnDisposable
     );
 }
 
