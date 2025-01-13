@@ -39,3 +39,5 @@ pids
 .DS_Store
 Thumbs.db
 .reclinerules
+.clj-kondo/
+.lsp/

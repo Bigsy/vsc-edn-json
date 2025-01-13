@@ -1,6 +1,0 @@
-Here are some test strings:
-"THIS IS AN UPPERCASE STRING"
-'ANOTHER UPPERCASE STRING'
-"Mixed Case String"
-'some lowercase string'
-"Special Characters: !@#$"
