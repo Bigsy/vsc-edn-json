@@ -14,7 +14,7 @@ A Visual Studio Code extension that allows you to convert between JSON and EDN f
 
 1. Select any text in your editor (you can select multiple areas by holding Cmd/Ctrl while selecting)
 2. Right-click on the selected text
-3. Choose "Convert Text" from the context menu
+3. Choose "Convert EDN/JSON" from the context menu
 4. Select either:
    - "Convert JSON to EDN" to convert JSON to Clojure EDN format
    - "Convert EDN to JSON" to convert Clojure EDN to JSON format

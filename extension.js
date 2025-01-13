@@ -103,6 +103,25 @@ function keywordizeObject(obj) {
     return obj;
 }
 
+function flattenFormat(obj) {
+    if (obj instanceof Map) {
+        const pairs = [];
+        for (let i = 0; i < obj.keys.length; i++) {
+            const key = encode(obj.keys[i]);
+            const val = flattenFormat(obj.vals[i]);
+            pairs.push(`${key} ${val}`);
+        }
+        return `{${pairs.join(' ')}}`;
+    }
+    
+    if (Array.isArray(obj)) {
+        const items = obj.map(item => flattenFormat(item));
+        return `[${items.join(' ')}]`;
+    }
+    
+    return encode(obj);
+}
+
 function activate(context) {
     let jsonToEdnDisposable = vscode.commands.registerCommand('string-highlighter.convertJsonToEdn', function () {
         processText(vscode.window.activeTextEditor, str => {
@@ -116,8 +135,56 @@ function activate(context) {
                 const keywordized = keywordizeObject(jsonObj);
                 debug('Keywordized object:', keywordized);
                 
-                const result = encode(keywordized);
-                debug('Final result:', result);
+                // Custom pretty print function for nice formatting
+                function prettyFormat(obj, indent = 0) {
+                    const spaces = ' '.repeat(indent);
+                    
+                    if (obj instanceof Map) {
+                        if (obj.keys.length === 0) return '{}';
+                        
+                        const pairs = [];
+                        let maxKeyLength = 0;
+                        const encodedPairs = [];
+                        
+                        // First pass: encode keys and find max length
+                        for (let i = 0; i < obj.keys.length; i++) {
+                            const key = encode(obj.keys[i]);
+                            encodedPairs.push([key, obj.vals[i]]);
+                            maxKeyLength = Math.max(maxKeyLength, key.length);
+                        }
+                        
+                        // Second pass: format with proper alignment
+                        for (let i = 0; i < encodedPairs.length; i++) {
+                            const [key, val] = encodedPairs[i];
+                            const padding = ' '.repeat(maxKeyLength - key.length);
+                            const valIndent = indent + maxKeyLength + 1;
+                            const formattedVal = prettyFormat(val, valIndent);
+                            
+                            if (i === 0) {
+                                pairs.push(`${key}${padding} ${formattedVal}`);
+                            } else {
+                                pairs.push(`${spaces}${key}${padding} ${formattedVal}`);
+                            }
+                        }
+                        
+                        return `{${pairs.join('\n')}}`;
+                    }
+                    
+                    if (Array.isArray(obj)) {
+                        if (obj.length === 0) return '[]';
+                        const items = obj.map(item => prettyFormat(item, indent + 4));
+                        const formattedItems = items.map((item, i) => {
+                            if (i === 0) return item;
+                            return ' ' + item;
+                        });
+                        return `[${formattedItems.join('\n')}]`;
+                    }
+                    
+                    return encode(obj);
+                }
+
+                const result = prettyFormat(keywordized);
+                debug('Final pretty-printed result:', result);
                 
                 return result;
             } catch (error) {
@@ -157,49 +224,76 @@ function activate(context) {
     let prettyPrintEdnDisposable = vscode.commands.registerCommand('string-highlighter.prettyPrintEdn', function () {
         processText(vscode.window.activeTextEditor, str => {
             try {
-                debug('\n--- Pretty printing EDN ---');
-                debug('Input EDN:', str);
-                
-                const ednObj = parse(str);
-                debug('Parsed EDN:', ednObj);
+                debug('\n--- Pretty printing EDN/JSON ---');
+                debug('Input:', str);
 
-                // Custom pretty print function
-                function prettyFormat(obj, indent = 0) {
-                    const spaces = ' '.repeat(indent);
-                    
-                    if (obj instanceof Map) {
-                        const pairs = [];
-                        for (let i = 0; i < obj.keys.length; i++) {
-                            const key = encode(obj.keys[i]);
-                            const val = prettyFormat(obj.vals[i], indent + 4);
-                            pairs.push(`${key} ${val}`);
+                // Try parsing as JSON first
+                try {
+                    const jsonObj = JSON.parse(str);
+                    debug('Parsed as JSON');
+                    return JSON.stringify(jsonObj, null, 2);
+                } catch (jsonError) {
+                    // If JSON parsing fails, try EDN
+                    try {
+                        debug('Trying EDN parse');
+                        const ednObj = parse(str);
+                        debug('Parsed as EDN');
+
+                        // Custom pretty print function for EDN
+                        function prettyFormat(obj, indent = 0) {
+                            const spaces = ' '.repeat(indent);
+                            
+                            if (obj instanceof Map) {
+                                if (obj.keys.length === 0) return '{}';
+                                
+                                const pairs = [];
+                                let maxKeyLength = 0;
+                                const encodedPairs = [];
+                                
+                                // First pass: encode keys and find max length
+                                for (let i = 0; i < obj.keys.length; i++) {
+                                    const key = encode(obj.keys[i]);
+                                    encodedPairs.push([key, obj.vals[i]]);
+                                    maxKeyLength = Math.max(maxKeyLength, key.length);
+                                }
+                                
+                                // Second pass: format with proper alignment
+                                for (let i = 0; i < encodedPairs.length; i++) {
+                                    const [key, val] = encodedPairs[i];
+                                    const padding = ' '.repeat(maxKeyLength - key.length);
+                                    const valIndent = indent + maxKeyLength + 1;
+                                    const formattedVal = prettyFormat(val, valIndent);
+                                    
+                                    if (i === 0) {
+                                        pairs.push(`${key}${padding} ${formattedVal}`);
+                                    } else {
+                                        pairs.push(`${spaces}${key}${padding} ${formattedVal}`);
+                                    }
+                                }
+                                
+                                return `{${pairs.join('\n')}}`;
+                            }
+                            
+                            if (Array.isArray(obj)) {
+                                if (obj.length === 0) return '[]';
+                                const items = obj.map(item => prettyFormat(item, indent + 4));
+                                const formattedItems = items.map((item, i) => {
+                                    if (i === 0) return item;
+                                    return ' ' + item;
+                                });
+                                return `[${formattedItems.join('\n')}]`;
+                            }
+                            
+                            return encode(obj);
                         }
-                        if (pairs.length === 0) return '{}';
-                        const formattedPairs = pairs.map((p, i) => {
-                            if (i === 0) return p; // First pair on same line as opening brace
-                            return ' ' + p; // One space indent for subsequent pairs
-                        });
-                        return `{${formattedPairs.join('\n')}}`;
+                        
+                        const result = prettyFormat(ednObj);
+                        debug('Pretty printed EDN:', result);
+                        return result;
+                    } catch (ednError) {
+                        throw new Error('Invalid input: must be valid JSON or EDN');
                     }
-                    
-                    if (Array.isArray(obj)) {
-                        if (obj.length === 0) return '[]';
-                        const items = obj.map(item => prettyFormat(item, indent + 4));
-                        const formattedItems = items.map((item, i) => {
-                            if (i === 0) return item; // First item on same line as opening bracket
-                            return ' ' + item; // One space indent for subsequent items
-                        });
-                        return `[${formattedItems.join('\n')}]`;
-                    }
-                    
-                    const encoded = encode(obj);
-                    return `${encoded}`;
                 }
-                
-                const result = prettyFormat(ednObj);
-                debug('Pretty printed EDN:', result);
-                
-                return result;
             } catch (error) {
                 debug('ERROR:', error);
                 debug('Error stack:', error.stack);
@@ -209,10 +303,42 @@ function activate(context) {
         });
     });
 
+    let flattenDisposable = vscode.commands.registerCommand('string-highlighter.flatten', function () {
+        processText(vscode.window.activeTextEditor, str => {
+            try {
+                debug('\n--- Flattening data ---');
+                debug('Input:', str);
+
+                // Try parsing as JSON first
+                try {
+                    const jsonObj = JSON.parse(str);
+                    debug('Parsed as JSON');
+                    return JSON.stringify(jsonObj);
+                } catch (jsonError) {
+                    // If JSON parsing fails, try EDN
+                    try {
+                        debug('Trying EDN parse');
+                        const ednObj = parse(str);
+                        debug('Parsed as EDN');
+                        return flattenFormat(ednObj);
+                    } catch (ednError) {
+                        throw new Error('Invalid input: must be valid JSON or EDN');
+                    }
+                }
+            } catch (error) {
+                debug('ERROR:', error);
+                debug('Error stack:', error.stack);
+                vscode.window.showErrorMessage(error.message);
+                return str;
+            }
+        });
+    });
+
     context.subscriptions.push(
         jsonToEdnDisposable,
         ednToJsonDisposable,
-        prettyPrintEdnDisposable
+        prettyPrintEdnDisposable,
+        flattenDisposable
     );
 }
 
