@@ -54,21 +54,3 @@ This extension contributes the following commands:
 
 * `string-highlighter.convertJsonToEdn`: Convert JSON to EDN format
 * `string-highlighter.convertEdnToJson`: Convert EDN to JSON format
-
-## Known Issues
-
-Please report any issues on the GitHub repository.
-
-## Release Notes
-
-### 0.0.2
-
-Added support for nested objects and arrays:
-- Pretty-printed JSON output
-
-### 0.0.1
-
-Initial release:
-- JSON to EDN conversion
-- EDN to JSON conversion
-- Visual highlighting feedback
