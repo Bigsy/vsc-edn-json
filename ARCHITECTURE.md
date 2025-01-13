@@ -10,7 +10,7 @@ The EDN-JSON Converter is a Visual Studio Code extension that enables seamless c
 - Registers four main commands in VSCode:
   - `string-highlighter.convertJsonToEdn`: Converts JSON to EDN format
   - `string-highlighter.convertEdnToJson`: Converts EDN to JSON format
-  - `string-highlighter.prettyPrintEdn`: Pretty prints EDN and JSON data
+  - `string-highlighter.prettyPrint`: Pretty prints EDN and JSON data
   - `string-highlighter.flatten`: Flattens EDN or JSON data into a single line while maintaining valid format
 - Commands are accessible through the editor context menu when text is selected
 
@@ -19,6 +19,14 @@ The EDN-JSON Converter is a Visual Studio Code extension that enables seamless c
 - Handles multiple text selections simultaneously
 - Provides visual feedback through temporary highlighting of converted text
 - Reports conversion status through information messages
+
+### 3. Formatting Utilities
+- `prettyFormat` function for EDN formatting
+  - Map formatting with aligned key-value pairs
+  - Array/vector formatting with proper indentation
+  - Basic value encoding
+- Native JSON.stringify for JSON pretty printing
+- Each format maintains its own structure and styling
 
 ### 3. Data Conversion System
 

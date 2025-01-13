@@ -44,6 +44,23 @@ converts to:
 }
 ```
 
+Formatting Commands:
+```clojure
+// Original EDN
+{:config {:port 8080 :host "localhost" :features ["auth" "api" "admin"]} :env "prod"}
+
+// After prettify
+{:config {:port    8080
+         :host     "localhost"
+         :features ["auth"
+                   "api"
+                   "admin"]}
+ :env    "prod"}
+
+// After flatten
+{:config {:port 8080 :host "localhost" :features ["auth" "api" "admin"]} :env "prod"}
+```
+
 ## Requirements
 
 - Visual Studio Code 1.60.0 or higher
@@ -54,3 +71,5 @@ This extension contributes the following commands:
 
 * `string-highlighter.convertJsonToEdn`: Convert JSON to EDN format
 * `string-highlighter.convertEdnToJson`: Convert EDN to JSON format
+* `string-highlighter.prettyPrintEdn`: Format JSON/EDN data with consistent indentation and aligned keys
+* `string-highlighter.flatten`: Remove all formatting and whitespace from JSON/EDN data

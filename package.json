@@ -26,7 +26,7 @@
   "activationEvents": [
     "onCommand:string-highlighter.convertJsonToEdn",
     "onCommand:string-highlighter.convertEdnToJson",
-    "onCommand:string-highlighter.prettyPrintEdn",
+    "onCommand:string-highlighter.prettyPrint",
     "onCommand:string-highlighter.flatten"
   ],
   "main": "./extension.js",
@@ -41,7 +41,7 @@
         "title": "Convert EDN to JSON"
       },
       {
-        "command": "string-highlighter.prettyPrintEdn",
+        "command": "string-highlighter.prettyPrint",
         "title": "Pretty (EDN/JSON)"
       },
       {
@@ -67,7 +67,7 @@
           "group": "2_conversion"
         },
         {
-          "command": "string-highlighter.prettyPrintEdn",
+          "command": "string-highlighter.prettyPrint",
           "group": "2_conversion"
         },
         {

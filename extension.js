@@ -122,6 +122,54 @@ function flattenFormat(obj) {
     return encode(obj);
 }
 
+// Shared pretty print function for nice formatting
+function prettyFormat(obj, indent = 0) {
+    const spaces = ' '.repeat(indent);
+    
+    if (obj instanceof Map) {
+        if (obj.keys.length === 0) return '{}';
+        
+        const pairs = [];
+        let maxKeyLength = 0;
+        const encodedPairs = [];
+        
+        // First pass: encode keys and find max length
+        for (let i = 0; i < obj.keys.length; i++) {
+            const key = encode(obj.keys[i]);
+            encodedPairs.push([key, obj.vals[i]]);
+            maxKeyLength = Math.max(maxKeyLength, key.length);
+        }
+        
+        // Second pass: format with proper alignment
+        for (let i = 0; i < encodedPairs.length; i++) {
+            const [key, val] = encodedPairs[i];
+            const padding = ' '.repeat(maxKeyLength - key.length);
+            const valIndent = indent + maxKeyLength + 1;
+            const formattedVal = prettyFormat(val, valIndent);
+            
+            if (i === 0) {
+                pairs.push(`${key}${padding} ${formattedVal}`);
+            } else {
+                pairs.push(`${spaces}${key}${padding} ${formattedVal}`);
+            }
+        }
+        
+        return `{${pairs.join('\n')}}`;
+    }
+    
+    if (Array.isArray(obj)) {
+        if (obj.length === 0) return '[]';
+        const items = obj.map(item => prettyFormat(item, indent + 4));
+        const formattedItems = items.map((item, i) => {
+            if (i === 0) return item;
+            return ' ' + item;
+        });
+        return `[${formattedItems.join('\n')}]`;
+    }
+    
+    return encode(obj);
+}
+
 function activate(context) {
     let jsonToEdnDisposable = vscode.commands.registerCommand('string-highlighter.convertJsonToEdn', function () {
         processText(vscode.window.activeTextEditor, str => {
@@ -135,54 +183,6 @@ function activate(context) {
                 const keywordized = keywordizeObject(jsonObj);
                 debug('Keywordized object:', keywordized);
                 
-                // Custom pretty print function for nice formatting
-                function prettyFormat(obj, indent = 0) {
-                    const spaces = ' '.repeat(indent);
-                    
-                    if (obj instanceof Map) {
-                        if (obj.keys.length === 0) return '{}';
-                        
-                        const pairs = [];
-                        let maxKeyLength = 0;
-                        const encodedPairs = [];
-                        
-                        // First pass: encode keys and find max length
-                        for (let i = 0; i < obj.keys.length; i++) {
-                            const key = encode(obj.keys[i]);
-                            encodedPairs.push([key, obj.vals[i]]);
-                            maxKeyLength = Math.max(maxKeyLength, key.length);
-                        }
-                        
-                        // Second pass: format with proper alignment
-                        for (let i = 0; i < encodedPairs.length; i++) {
-                            const [key, val] = encodedPairs[i];
-                            const padding = ' '.repeat(maxKeyLength - key.length);
-                            const valIndent = indent + maxKeyLength + 1;
-                            const formattedVal = prettyFormat(val, valIndent);
-                            
-                            if (i === 0) {
-                                pairs.push(`${key}${padding} ${formattedVal}`);
-                            } else {
-                                pairs.push(`${spaces}${key}${padding} ${formattedVal}`);
-                            }
-                        }
-                        
-                        return `{${pairs.join('\n')}}`;
-                    }
-                    
-                    if (Array.isArray(obj)) {
-                        if (obj.length === 0) return '[]';
-                        const items = obj.map(item => prettyFormat(item, indent + 4));
-                        const formattedItems = items.map((item, i) => {
-                            if (i === 0) return item;
-                            return ' ' + item;
-                        });
-                        return `[${formattedItems.join('\n')}]`;
-                    }
-                    
-                    return encode(obj);
-                }
-
                 const result = prettyFormat(keywordized);
                 debug('Final pretty-printed result:', result);
                 
@@ -221,7 +221,7 @@ function activate(context) {
         });
     });
 
-    let prettyPrintEdnDisposable = vscode.commands.registerCommand('string-highlighter.prettyPrintEdn', function () {
+    let prettyPrintDisposable = vscode.commands.registerCommand('string-highlighter.prettyPrint', function () {
         processText(vscode.window.activeTextEditor, str => {
             try {
                 debug('\n--- Pretty printing EDN/JSON ---');
@@ -231,62 +231,15 @@ function activate(context) {
                 try {
                     const jsonObj = JSON.parse(str);
                     debug('Parsed as JSON');
-                    return JSON.stringify(jsonObj, null, 2);
+                    const result = JSON.stringify(jsonObj, null, 2);
+                    debug('Pretty printed JSON:', result);
+                    return result;
                 } catch (jsonError) {
                     // If JSON parsing fails, try EDN
                     try {
                         debug('Trying EDN parse');
                         const ednObj = parse(str);
                         debug('Parsed as EDN');
-
-                        // Custom pretty print function for EDN
-                        function prettyFormat(obj, indent = 0) {
-                            const spaces = ' '.repeat(indent);
-                            
-                            if (obj instanceof Map) {
-                                if (obj.keys.length === 0) return '{}';
-                                
-                                const pairs = [];
-                                let maxKeyLength = 0;
-                                const encodedPairs = [];
-                                
-                                // First pass: encode keys and find max length
-                                for (let i = 0; i < obj.keys.length; i++) {
-                                    const key = encode(obj.keys[i]);
-                                    encodedPairs.push([key, obj.vals[i]]);
-                                    maxKeyLength = Math.max(maxKeyLength, key.length);
-                                }
-                                
-                                // Second pass: format with proper alignment
-                                for (let i = 0; i < encodedPairs.length; i++) {
-                                    const [key, val] = encodedPairs[i];
-                                    const padding = ' '.repeat(maxKeyLength - key.length);
-                                    const valIndent = indent + maxKeyLength + 1;
-                                    const formattedVal = prettyFormat(val, valIndent);
-                                    
-                                    if (i === 0) {
-                                        pairs.push(`${key}${padding} ${formattedVal}`);
-                                    } else {
-                                        pairs.push(`${spaces}${key}${padding} ${formattedVal}`);
-                                    }
-                                }
-                                
-                                return `{${pairs.join('\n')}}`;
-                            }
-                            
-                            if (Array.isArray(obj)) {
-                                if (obj.length === 0) return '[]';
-                                const items = obj.map(item => prettyFormat(item, indent + 4));
-                                const formattedItems = items.map((item, i) => {
-                                    if (i === 0) return item;
-                                    return ' ' + item;
-                                });
-                                return `[${formattedItems.join('\n')}]`;
-                            }
-                            
-                            return encode(obj);
-                        }
-                        
                         const result = prettyFormat(ednObj);
                         debug('Pretty printed EDN:', result);
                         return result;
@@ -297,7 +250,7 @@ function activate(context) {
             } catch (error) {
                 debug('ERROR:', error);
                 debug('Error stack:', error.stack);
-                vscode.window.showErrorMessage('Invalid EDN: ' + (error.message || error));
+                vscode.window.showErrorMessage('Invalid input: ' + (error.message || error));
                 return str;
             }
         });
@@ -337,7 +290,7 @@ function activate(context) {
     context.subscriptions.push(
         jsonToEdnDisposable,
         ednToJsonDisposable,
-        prettyPrintEdnDisposable,
+        prettyPrintDisposable,
         flattenDisposable
     );
 }
