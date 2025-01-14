@@ -21,12 +21,15 @@ The EDN-JSON Converter is a Visual Studio Code extension that enables seamless c
 - Reports conversion status through information messages
 
 ### 3. Formatting Utilities
-- `prettyFormat` function for EDN formatting
-  - Map formatting with aligned key-value pairs
-  - Array/vector formatting with proper indentation
-  - Basic value encoding
+- Enhanced `prettyFormat` function for EDN formatting
+  - Consistent 2-space indentation for nested structures
+  - Map formatting with aligned key-value pairs and proper padding
+  - Improved array/vector formatting with each item on new line
+  - Smart handling of nested structures with appropriate line breaks
+  - Context-aware initial line handling to prevent over-indentation
+  - Basic value encoding for primitives
 - Native JSON.stringify for JSON pretty printing
-- Each format maintains its own structure and styling
+- Each format maintains its own structure and styling conventions
 
 ### 3. Data Conversion System
 

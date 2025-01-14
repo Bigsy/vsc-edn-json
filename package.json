@@ -86,6 +86,7 @@
   "scripts": {
     "lint": "eslint .",
     "pretest": "npm run lint",
+    "test": "jest",
     "package": "vsce package",
     "publish": "vsce publish"
   },
@@ -93,7 +94,8 @@
     "@types/node": "^16.x.x",
     "@types/vscode": "^1.60.0",
     "@vscode/vsce": "^2.24.0",
-    "eslint": "^8.x.x"
+    "eslint": "^8.x.x",
+    "jest": "^29.7.0"
   },
   "dependencies": {
     "jsedn": "^0.4.1"

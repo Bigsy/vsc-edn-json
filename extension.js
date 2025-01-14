@@ -1,10 +1,10 @@
 const vscode = require('vscode');
-const { encode, parse, Keyword, Map } = require('jsedn');
+const { encode, parse, Keyword, Map, Vector, List } = require('jsedn');
 
 // Create output channel for debugging
 const outputChannel = vscode.window.createOutputChannel('EDN Converter Debug');
 
-function debug(message, obj = null) {
+function _debug(message, obj = null) {
     if (obj) {
         outputChannel.appendLine(`${message}: ${JSON.stringify(obj, null, 2)}`);
     } else {
@@ -55,51 +55,53 @@ function processText(editor, transformFn) {
 }
 
 function convertEdnToObj(ednObj) {
+    // Handle primitives
     if (typeof ednObj === 'string' || typeof ednObj === 'number' || typeof ednObj === 'boolean') {
         return ednObj;
     }
-    
+
     // Handle EDN maps
-    if (ednObj && ednObj.keys && ednObj.vals) {
+    if (ednObj instanceof Map) {
         const result = {};
         const keys = ednObj.keys || [];
         const vals = ednObj.vals || [];
         for (let i = 0; i < keys.length; i++) {
-            const key = keys[i].name.replace(/^:/, '');  // Remove leading colon from keywords
-            const val = convertEdnToObj(vals[i]);
-            result[key] = val;
+            const key = keys[i].name.replace(/^:/, '');
+            result[key] = convertEdnToObj(vals[i]);
         }
         return result;
     }
-    
-    // Handle EDN vectors/lists
+
+    // Handle vectors/lists
+    if (ednObj instanceof Vector || ednObj instanceof List) {
+        return ednObj.val.map(convertEdnToObj);
+    }
+
+    // Handle arrays
     if (Array.isArray(ednObj)) {
         return ednObj.map(convertEdnToObj);
     }
-    
+
     return ednObj;
 }
 
 function keywordizeObject(obj) {
-    debug('Processing object:', obj);
+    // Handle arrays
     if (Array.isArray(obj)) {
-        debug('Processing array');
         return obj.map(keywordizeObject);
-    } else if (obj && typeof obj === 'object') {
-        debug('Processing object keys');
+    }
+
+    // Handle objects
+    if (obj && typeof obj === 'object') {
         const pairs = [];
         for (const [key, value] of Object.entries(obj)) {
-            debug(`Processing key: ${key}`);
             pairs.push(new Keyword(`:${key}`));
-            const processedValue = keywordizeObject(value);
-            debug(`Processed value for ${key}:`, processedValue);
-            pairs.push(processedValue);
+            pairs.push(keywordizeObject(value));
         }
-        const ednMap = new Map(pairs);
-        debug('Created EDN map:', ednMap);
-        return ednMap;
+        return new Map(pairs);
     }
-    debug('Returning primitive value:', obj);
+
+    // Handle primitives
     return obj;
 }
 
@@ -114,7 +116,7 @@ function flattenFormat(obj) {
         return `{${pairs.join(' ')}}`;
     }
     
-    if (Array.isArray(obj)) {
+    if (obj instanceof Vector || obj instanceof List || Array.isArray(obj)) {
         const items = obj.map(item => flattenFormat(item));
         return `[${items.join(' ')}]`;
     }
@@ -122,49 +124,23 @@ function flattenFormat(obj) {
     return encode(obj);
 }
 
-// Shared pretty print function for nice formatting
-function prettyFormat(obj, indent = 0) {
-    const spaces = ' '.repeat(indent);
-    
+function formatEdn(obj) {
     if (obj instanceof Map) {
         if (obj.keys.length === 0) return '{}';
         
         const pairs = [];
-        let maxKeyLength = 0;
-        const encodedPairs = [];
-        
-        // First pass: encode keys and find max length
         for (let i = 0; i < obj.keys.length; i++) {
             const key = encode(obj.keys[i]);
-            encodedPairs.push([key, obj.vals[i]]);
-            maxKeyLength = Math.max(maxKeyLength, key.length);
+            const val = formatEdn(obj.vals[i]);
+            pairs.push(`${key} ${val}`);
         }
-        
-        // Second pass: format with proper alignment
-        for (let i = 0; i < encodedPairs.length; i++) {
-            const [key, val] = encodedPairs[i];
-            const padding = ' '.repeat(maxKeyLength - key.length);
-            const valIndent = indent + maxKeyLength + 1;
-            const formattedVal = prettyFormat(val, valIndent);
-            
-            if (i === 0) {
-                pairs.push(`${key}${padding} ${formattedVal}`);
-            } else {
-                pairs.push(`${spaces}${key}${padding} ${formattedVal}`);
-            }
-        }
-        
-        return `{${pairs.join('\n')}}`;
+        return `{${pairs.join(' ')}}`;
     }
     
-    if (Array.isArray(obj)) {
+    if (obj instanceof Vector || obj instanceof List || Array.isArray(obj)) {
         if (obj.length === 0) return '[]';
-        const items = obj.map(item => prettyFormat(item, indent + 4));
-        const formattedItems = items.map((item, i) => {
-            if (i === 0) return item;
-            return ' ' + item;
-        });
-        return `[${formattedItems.join('\n')}]`;
+        const items = obj.map(item => formatEdn(item));
+        return `[${items.join(' ')}]`;
     }
     
     return encode(obj);
@@ -174,22 +150,11 @@ function activate(context) {
     let jsonToEdnDisposable = vscode.commands.registerCommand('string-highlighter.convertJsonToEdn', function () {
         processText(vscode.window.activeTextEditor, str => {
             try {
-                debug('\n--- Starting JSON to EDN conversion ---');
-                debug('Input JSON:', str);
-                
                 const jsonObj = JSON.parse(str);
-                debug('Parsed JSON:', jsonObj);
-                
                 const keywordized = keywordizeObject(jsonObj);
-                debug('Keywordized object:', keywordized);
-                
-                const result = prettyFormat(keywordized);
-                debug('Final pretty-printed result:', result);
-                
+                const result = formatEdn(keywordized);
                 return result;
             } catch (error) {
-                debug('ERROR:', error);
-                debug('Error stack:', error.stack);
                 vscode.window.showErrorMessage('Invalid JSON: ' + (error.message || error));
                 return str;
             }
@@ -199,22 +164,10 @@ function activate(context) {
     let ednToJsonDisposable = vscode.commands.registerCommand('string-highlighter.convertEdnToJson', function () {
         processText(vscode.window.activeTextEditor, str => {
             try {
-                debug('\n--- Starting EDN to JSON conversion ---');
-                debug('Input EDN:', str);
-                
                 const ednObj = parse(str);
-                debug('Parsed EDN:', ednObj);
-                
                 const jsObj = convertEdnToObj(ednObj);
-                debug('Converted to JS object:', jsObj);
-                
-                const result = JSON.stringify(jsObj, null, 2);
-                debug('Final JSON:', result);
-                
-                return result;
+                return JSON.stringify(jsObj, null, 2);
             } catch (error) {
-                debug('ERROR:', error);
-                debug('Error stack:', error.stack);
                 vscode.window.showErrorMessage('Invalid EDN: ' + (error.message || error));
                 return str;
             }
@@ -224,32 +177,20 @@ function activate(context) {
     let prettyPrintDisposable = vscode.commands.registerCommand('string-highlighter.prettyPrint', function () {
         processText(vscode.window.activeTextEditor, str => {
             try {
-                debug('\n--- Pretty printing EDN/JSON ---');
-                debug('Input:', str);
-
                 // Try parsing as JSON first
                 try {
                     const jsonObj = JSON.parse(str);
-                    debug('Parsed as JSON');
-                    const result = JSON.stringify(jsonObj, null, 2);
-                    debug('Pretty printed JSON:', result);
-                    return result;
+                    return JSON.stringify(jsonObj, null, 2);
                 } catch (jsonError) {
                     // If JSON parsing fails, try EDN
                     try {
-                        debug('Trying EDN parse');
                         const ednObj = parse(str);
-                        debug('Parsed as EDN');
-                        const result = prettyFormat(ednObj);
-                        debug('Pretty printed EDN:', result);
-                        return result;
+                        return formatEdn(ednObj);
                     } catch (ednError) {
                         throw new Error('Invalid input: must be valid JSON or EDN');
                     }
                 }
             } catch (error) {
-                debug('ERROR:', error);
-                debug('Error stack:', error.stack);
                 vscode.window.showErrorMessage('Invalid input: ' + (error.message || error));
                 return str;
             }
@@ -259,28 +200,20 @@ function activate(context) {
     let flattenDisposable = vscode.commands.registerCommand('string-highlighter.flatten', function () {
         processText(vscode.window.activeTextEditor, str => {
             try {
-                debug('\n--- Flattening data ---');
-                debug('Input:', str);
-
                 // Try parsing as JSON first
                 try {
                     const jsonObj = JSON.parse(str);
-                    debug('Parsed as JSON');
                     return JSON.stringify(jsonObj);
                 } catch (jsonError) {
                     // If JSON parsing fails, try EDN
                     try {
-                        debug('Trying EDN parse');
                         const ednObj = parse(str);
-                        debug('Parsed as EDN');
                         return flattenFormat(ednObj);
                     } catch (ednError) {
                         throw new Error('Invalid input: must be valid JSON or EDN');
                     }
                 }
             } catch (error) {
-                debug('ERROR:', error);
-                debug('Error stack:', error.stack);
                 vscode.window.showErrorMessage(error.message);
                 return str;
             }
@@ -299,5 +232,39 @@ function deactivate() {}
 
 module.exports = {
     activate,
-    deactivate
+    deactivate,
+    // Export core functions for testing
+    convertEdnToObj,
+    keywordizeObject,
+    flattenFormat,
+    formatEdn,
+    // Helper for testing transform functions
+    _transformFunctions: {
+        jsonToEdn: str => {
+            const jsonObj = JSON.parse(str);
+            const keywordized = keywordizeObject(jsonObj);
+            return formatEdn(keywordized);
+        },
+        ednToJson: str => {
+            const ednObj = parse(str);
+            const jsObj = convertEdnToObj(ednObj);
+            return JSON.stringify(jsObj, null, 2);
+        },
+        prettyPrintJson: str => {
+            const jsonObj = JSON.parse(str);
+            return JSON.stringify(jsonObj, null, 2);
+        },
+        prettyPrintEdn: str => {
+            const ednObj = parse(str);
+            return formatEdn(ednObj);
+        },
+        flattenJson: str => {
+            const jsonObj = JSON.parse(str);
+            return JSON.stringify(jsonObj);
+        },
+        flattenEdn: str => {
+            const ednObj = parse(str);
+            return flattenFormat(ednObj);
+        }
+    }
 };
