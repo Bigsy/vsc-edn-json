@@ -1,6 +1,6 @@
 # EDN-JSON Converter
 
-A Visual Studio Code extension that allows you to convert between JSON and EDN formats with visual feedback.
+A Visual Studio Code extension that allows you to convert between JSON and EDN formats with visual feedback. The extension icon adapts to your VSCode theme - using a light variant in light themes and a dark variant in dark themes for optimal visibility.
 
 ## Features
 

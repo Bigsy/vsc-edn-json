@@ -2,8 +2,8 @@
   "name": "edn-json-converter",
   "displayName": "EDN-JSON Converter",
   "description": "Convert between EDN and JSON formats with visual highlighting",
-  "version": "0.0.1",
-  "publisher": "YOUR-PUBLISHER-NAME",
+  "version": "0.0.2",
+  "publisher": "billhedworth",
   "engines": {
     "vscode": "^1.60.0"
   },
@@ -21,7 +21,7 @@
   "icon": "images/icon.png",
   "repository": {
     "type": "git",
-    "url": "YOUR-REPO-URL"
+    "url": "https://github.com/Bigsy/vsc-edn-json"
   },
   "activationEvents": [
     "onCommand:string-highlighter.convertJsonToEdn",

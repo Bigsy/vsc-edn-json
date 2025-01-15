@@ -75,6 +75,10 @@ The EDN-JSON Converter is a Visual Studio Code extension that enables seamless c
 2. Temporary highlighting of converted text (2-second duration)
 3. Status messages for conversion results
 4. Error notifications for invalid input
+5. Adaptive extension icon system:
+   - Dark variant (icon.png) for dark themes
+   - Light variant (icon-light.png) for light themes
+   - 128x128 pixel resolution for optimal marketplace display
 
 ### Activation Events
 - Commands are available when text is selected in the editor
